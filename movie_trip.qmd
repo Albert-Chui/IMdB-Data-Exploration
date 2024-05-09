@@ -133,8 +133,8 @@ a_movie <- full_join(
 
 ```{r, echo = F}
 ggplot() + 
-  geom_line(data = adult_movies, aes(x=startYear, y = avg_rating, group =1), color = "red") +
-  geom_line(data = not_adult_movies, aes(x=startYear, y = avg_rating1, group =1), color = "blue") + 
+  geom_line(data = adult_movies, aes(x=startYear, y = avg_rating, group =1, color = "Adult")) +
+  geom_line(data = not_adult_movies, aes(x=startYear, y = avg_rating1, group =1, color = "Not Adult"), linetype = "dashed") + 
   scale_x_discrete(breaks = seq(0, max(timed_genre_ratings$startYear), by = 25)) + 
   labs(x = "Year", y = "Average Rating", title = "Average Rating of Adult Movies vs Non-Adult Movies Through the Years")
 ```
