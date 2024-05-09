@@ -1,0 +1,140 @@
+---
+title: "Mini Project 2"
+author: 
+  - Albert Chui (albertchui)
+date: "May 8, 2024"
+format: pdf
+fontsize: 12pt
+number-sections: TRUE
+linkcolor: purple
+geometry:
+  - margin=1in
+toc: TRUE
+---
+# Abstract {#sec-abstract}
+
+\begin{abstract}
+In this paper we explore data from the official IMdB Documentation detailing 942007 movies. We find that the average rating between genres varies between 5 and 7 points. For the ratings of selected genres of news, reality-tv, horror, documentary we see that documentaries are relativly stable, horror has been decreasing, reality-tv has been increasing, and news has been extremly variable throughout the years. In addition, runtime of movies has been increasing over the years, to a current 2024 average of 120 minutes. The runtime of episodes in tv series had been increasing until 24 years ago, when it has suddenly started decreasing until it hit 40 minutes, then bounced back to 50 minutes. 
+\end{abstract}
+
+```{r, echo = F}
+library("tidyverse")
+library("pander")
+```
+
+
+```{r, echo = F}
+basics <- read.csv("data/basics.csv") 
+ratings <- read.csv("data/ratings.csv")
+```
+```{r, echo = F}
+basics <- basics %>%
+  mutate(genres = strsplit(as.character(genres), ",")) %>%
+  unnest(genres)
+
+movies <- left_join(
+  basics, 
+  ratings, 
+  by = join_by(tconst == tconst)
+)
+```
+# Dataset Examination
+Let us first look at all of our unique genres in this dataset:
+```{r, echo = F}
+unique(basics$genres)
+```
+
+
+```{r, echo = F}
+# Romance , Documentary, Mystery, Talk, Short, Animation
+genre_ratings <- movies %>%
+  group_by(genres) %>%
+  summarise(avg_rating = mean(averageRating, na.rm = T))
+genre_ratings <- genre_ratings[order(genre_ratings$avg_rating, decreasing=T),]
+genre_ratings %>% pander()
+```
+```{r, echo= F}
+#make line graph
+timed_genre_ratings <- movies %>%
+  group_by(genres, startYear) %>%
+  summarise(avg_rating = mean(averageRating, na.rm = T))
+timed_genre_ratings %>% 
+  group_by(genres)
+```
+```{r, echo = F}
+ggplot(timed_genre_ratings, aes(x = startYear, y = avg_rating)) + 
+  geom_point() +
+  facet_wrap("genres") +
+  labs(x = "Year", y = "Average Rating", title = "Average Rating of Genres Through the Years") +
+  scale_x_discrete(breaks = seq(0, max(timed_genre_ratings$startYear), by = 50))
+```
+```{r, echo = F}
+# news, reality-tv, horror, documentary
+limited_timed_genre_ratings <- timed_genre_ratings %>%
+  filter(genres == "News"| genres == "Reality-TV"| genres == "Horror"| genres == "Documentary")
+```
+
+```{r}
+ggplot(limited_timed_genre_ratings, color = `genres`, aes(x = startYear, y = avg_rating)) + 
+  geom_point() +
+  facet_wrap("genres") +
+  labs(x = "Year", y = "Average Rating", title = "Average Rating of Genres Through the Years") +
+  scale_x_discrete(breaks = seq(0, max(timed_genre_ratings$startYear), by = 25))
+```
+
+```{r, echo = F}
+movies$runtimeMinutes <- as.numeric(movies$runtimeMinutes)
+timed_runlength <- movies %>%
+  group_by(startYear) %>%
+  filter(titleType == "movie") %>%
+  summarise(avg_runtime = mean(runtimeMinutes, na.rm = T))
+```
+
+```{r, echo = F}
+ggplot(timed_runlength)+
+  geom_point(aes(x=`startYear`, y = `avg_runtime`)) + 
+  labs(x = "Year", y = "Average Runtime", title = "Average Runtime of Movies Through the Years") +
+  scale_x_discrete(breaks = seq(0, max(timed_runlength$startYear), by = 25)) +
+  ylim(0, 120)
+```
+```{r, echo = F}
+series_timed_runlength <- movies %>%
+  group_by(startYear) %>%
+  filter(titleType == "tvSeries") %>%
+  summarise(avg_runtime = mean(runtimeMinutes, na.rm = T))
+```
+
+```{r}
+ggplot(series_timed_runlength)+
+  geom_point(aes(x=`startYear`, y = `avg_runtime`)) + 
+  labs(x = "Year", y = "Average Runtime", title = "Average Runtime of TV Series Through the Years") +
+  scale_x_discrete(breaks = seq(0, max(series_timed_runlength$startYear), by = 25)) +
+  ylim(0, 60)
+```
+```{r, echo = F}
+# Does more votes influence rating?
+adult_movies <- movies %>%
+  group_by(startYear) %>%
+  filter(`isAdult` == 1 & startYear > "1962" & titleType == "movie") %>%
+  summarise(avg_rating = mean(averageRating, na.rm = T))
+
+not_adult_movies <- movies %>%
+  group_by(startYear) %>%
+  filter(`isAdult` == 0& startYear > "1962"& titleType == "movie") %>%
+  summarise(avg_rating1 = mean(averageRating, na.rm = T))
+```
+
+```{r, echo = F}
+a_movie <- full_join(
+  adult_movies, 
+  not_adult_movies
+)
+```
+
+```{r, echo = F}
+ggplot() + 
+  geom_line(data = adult_movies, aes(x=startYear, y = avg_rating, group =1), color = "red") +
+  geom_line(data = not_adult_movies, aes(x=startYear, y = avg_rating1, group =1), color = "blue") + 
+  scale_x_discrete(breaks = seq(0, max(timed_genre_ratings$startYear), by = 25)) + 
+  labs(x = "Year", y = "Average Rating", title = "Average Rating of Adult Movies vs Non-Adult Movies Through the Years")
+```
