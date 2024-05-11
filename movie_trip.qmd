@@ -297,39 +297,6 @@ From the results of our ANOVA test above, we can see that our p-value is very sm
 
 
 
-
-
-```{r, echo= F}
-#make line graph
-timed_genre_ratings <- movies %>%
-  group_by(genres, startYear) %>%
-  summarise(avg_rating = mean(averageRating, na.rm = T))
-timed_genre_ratings %>% 
-  group_by(genres)
-```
-
-```{r, echo = F}
-ggplot(timed_genre_ratings, aes(x = startYear, y = avg_rating)) + 
-  geom_point() +
-  facet_wrap("genres") +
-  labs(x = "Year", y = "Average Rating", title = "Average Rating of Genres Through the Years") +
-  scale_x_discrete(breaks = seq(0, max(timed_genre_ratings$startYear), by = 50))
-```
-
-```{r, echo = F}
-# news, reality-tv, horror, documentary
-limited_timed_genre_ratings <- timed_genre_ratings %>%
-  filter(genres == "News"| genres == "Reality-TV"| genres == "Horror"| genres == "Documentary")
-```
-
-```{r}
-ggplot(limited_timed_genre_ratings, color = `genres`, aes(x = startYear, y = avg_rating)) + 
-  geom_point() +
-  facet_wrap("genres") +
-  labs(x = "Year", y = "Average Rating", title = "Average Rating of Genres Through the Years") +
-  scale_x_discrete(breaks = seq(0, max(timed_genre_ratings$startYear), by = 25))
-```
-
 ```{r, echo = F}
 movies$runtimeMinutes <- as.numeric(movies$runtimeMinutes)
 timed_runlength <- movies %>%
