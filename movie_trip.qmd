@@ -17,7 +17,7 @@ toc: TRUE
 In this paper we explore data from the official IMdB Documentation detailing 942007 movies. We find that the average rating between genres varies between 5 and 7 points. For the ratings of selected genres of news, reality-tv, horror, documentary we see that documentaries are relativly stable, horror has been decreasing, reality-tv has been increasing, and news has been extremly variable throughout the years. In addition, runtime of movies has been increasing over the years, to a current 2024 average of 120 minutes. The runtime of episodes in tv series had been increasing until 24 years ago, when it has suddenly started decreasing until it hit 40 minutes, then bounced back to 50 minutes. 
 \end{abstract}
 
-```{r, echo = F}
+```{r, echo = F, message = F}
 library("tidyverse")
 library("pander")
 ```
@@ -27,6 +27,7 @@ library("pander")
 basics <- read.csv("data/basics.csv") 
 ratings <- read.csv("data/ratings.csv")
 ```
+
 ```{r, echo = F}
 basics <- basics %>%
   mutate(genres = strsplit(as.character(genres), ",")) %>%
@@ -40,19 +41,264 @@ movies <- left_join(
 ```
 # Dataset Examination
 Let us first look at all of our unique genres in this dataset:
-```{r, echo = F}
-unique(basics$genres)
-```
-
 
 ```{r, echo = F}
 # Romance , Documentary, Mystery, Talk, Short, Animation
 genre_ratings <- movies %>%
   group_by(genres) %>%
-  summarise(avg_rating = mean(averageRating, na.rm = T))
+  summarise(avg_rating = mean(averageRating, na.rm = T), num_movies = n())
 genre_ratings <- genre_ratings[order(genre_ratings$avg_rating, decreasing=T),]
-genre_ratings %>% pander()
+genre_ratings %>% filter(genres != "\\N") %>% pander()
 ```
+
+# Testing for Differences in Mean Rating Across Genres
+
+In this section we will perform several hypothesis tests on different genres to determine if there is a difference in the mean rating based on genre.
+
+## Documentary VS Action
+
+Here, we specifically test for a difference in mean rating between documentaries and action programs. To do this we test the following hypotheses:
+$$
+\begin{cases}
+H_0:\mu_{documentary} = \mu_{action}\\
+H_a:\mu_{documentary} \ne \mu_{action}\\
+\end{cases}
+$$
+```{r, eval = F, echo = F}
+y_bar_doc <- movies %>% filter(`genres` == "Documentary") %>% pull(`averageRating`) %>% mean(na.rm = T)
+y_bar_act <- movies %>% filter(`genres` == "Action") %>% pull(`averageRating`) %>% mean(na.rm = T)
+s_doc <- movies %>% filter(`genres` == "Documentary") %>% pull(`averageRating`) %>% sd(na.rm = T)
+s_act <- movies %>% filter(`genres` == "Action") %>% pull(`averageRating`) %>% sd(na.rm = T)
+n_doc <- movies %>% filter(`genres` == "Documentary") %>% pull(`averageRating`) %>% na.omit() %>% length()
+n_act <- movies %>% filter(`genres` == "Action") %>% pull(`averageRating`) %>% na.omit() %>% length()
+df <- 68285
+# Test Documentary VS Action
+d <- y_bar_doc - y_bar_act
+t_0 <- d/sqrt(((s_doc^2)/n_doc) + ((s_act^2)/n_act))
+crit_val <- qt(0.025, df, lower.tail = F)
+cat("Test Statistic: " , t_0)
+cat("\nCritical Value (alpha = 0.05): ", crit_val)
+```
+
+```{r, warning=F, echo=F}
+t.test(x = movies %>% filter(`genres` == "Documentary") %>% pull(`averageRating`),
+       y = movies %>% filter(`genres` == "Action") %>% pull(`averageRating`),
+       alternative = 'two.sided',
+       conf.level = 0.95,
+       na.rm = T)
+
+movies %>%
+  filter(genres == "Action" | genres == "Documentary") %>%
+  ggplot(aes(x = genres, y = averageRating)) +
+  geom_boxplot(staplewidth = 0.25) +
+  labs(x = "Genre", y = "Average Rating", title = "Documentary vs. Action") +
+  theme_bw()
+```
+From the results of our two-sample t-test we can see that our p-value is smaller than 0.05, which means there is a significant difference in mean ratings across Documentaries and Action movies/series. From the boxplot, we can see that the mean rating for both categories seems to clearly differ.
+
+## Crime vs. Sports
+
+Here, we specifically test for a difference in mean rating between crime and sports programs. To do this we test the following hypotheses:
+$$
+\begin{cases}
+H_0:\mu_{crime} = \mu_{sports}\\
+H_a:\mu_{crime} \ne \mu_{sports}\\
+\end{cases}
+$$
+```{r, warning=F, echo=F}
+t.test(x = movies %>% filter(`genres` == "Crime") %>% pull(`averageRating`),
+       y = movies %>% filter(`genres` == "Sport") %>% pull(`averageRating`),
+       alternative = 'two.sided',
+       conf.level = 0.95,
+       na.rm = T)
+
+movies %>%
+  filter(genres == "Crime" | genres == "Sport") %>%
+  ggplot(aes(x = genres, y = averageRating)) +
+  geom_boxplot(staplewidth = 0.25) +
+  labs(x = "Genre", y = "Average Rating", title = "Crime vs. Sport") +
+  theme_bw()
+```
+From the results of our two-sample t-test we can see that our p-value is smaller than 0.05, which means there is a significant difference in mean ratings across Crime and Sports movies/series. From the boxplot, we can see that the mean rating for both categories differs slightly, but only through our t-test can we tell that this is a significant differnece.
+
+## News vs Drama
+
+Here, we specifically test for a difference in mean rating between News and Drama programs. To do this we test the following hypotheses:
+$$
+\begin{cases}
+H_0:\mu_{news} = \mu_{drama}\\
+H_a:\mu_{news} \ne \mu_{drama}\\
+\end{cases}
+$$
+```{r, warning=F, echo=F}
+t.test(x = movies %>% filter(`genres` == "News") %>% pull(`averageRating`),
+       y = movies %>% filter(`genres` == "Drama") %>% pull(`averageRating`),
+       alternative = 'two.sided',
+       conf.level = 0.95,
+       na.rm = T)
+
+movies %>%
+  filter(genres == "News" | genres == "Drama") %>%
+  ggplot(aes(x = genres, y = averageRating)) +
+  geom_boxplot(staplewidth = 0.25) +
+  labs(x = "Genre", y = "Average Rating", title = "News vs. Drama") +
+  theme_bw()
+```
+From the results of our two-sample t-test we can see that our p-value is larger than 0.05, which means there is not a significant difference in mean ratings across Crime and Sports movies/series. From the boxplot, we can see that the mean rating for both categories is very similar, appearing almost identical.
+
+
+## Romance vs Sci-Fi vs War vs Western
+
+In this section we test for differences in mean ratings across groups larger than 2 genres, meaning we need to perform an Analysis of Variance test.
+
+### Check Assumptions
+
+1) **Normality**
+```{r, echo=F}
+scifi_ratings <- movies %>% filter(`genres` == "Sci-Fi") %>% pull(`averageRating`)
+war_ratings <- movies %>% filter(`genres` == "War") %>% pull(`averageRating`)
+romance_ratings <- movies %>% filter(`genres` == "Romance") %>% pull(`averageRating`)
+western_ratings <- movies %>% filter(`genres` == "Western") %>% pull(`averageRating`)
+
+qqnorm(scifi_ratings, main = "Sci-Fi Normal Q-Q Plot")
+qqnorm(war_ratings, main = "War Normal Q-Q Plot")
+qqnorm(romance_ratings, main = "Romance Normal Q-Q Plot")
+qqnorm(western_ratings, main = "Western Normal Q-Q Plot")
+```
+From the above Q-Q Plots, we can see that our normality assumption holds for all four genres.
+
+2) Homoscedasticity (Constant Variance)
+
+```{r, echo  = F}
+movies %>% filter(genres %in% c("Romance", "Western", "War", "Sci-Fi")) %>% select(genres, averageRating) %>% na.omit() %>%
+  ggplot(aes(x = genres, y = averageRating)) +
+  geom_boxplot(staplewidth = 0.25)
+```
+From the above boxplots, we can see that the assumption of Homoscedasticity holds for this dataset as all four genres seem to have approximately the same variance.
+
+3) Independence
+
+Although we cannot test for independence, it is unlikely that the ratings for one movie or series strongly effects the rating for a different movie or series, meaning our assumption of Independence is most likely not violated.
+
+## Conduct ANOVA Test
+
+$$
+\begin{cases}
+H_0: \mu_{war} = \mu_{romance} = \mu_{western} = \mu_{sci-fi}\\
+H_a: \text{At least one mean differs from the others}
+\end{cases}
+$$
+```{r, echo = F}
+aov_df <- movies %>% filter(genres %in% c("Romance", "Western", "War", "Sci-Fi")) %>% select(genres, averageRating) %>% na.omit()
+aov(averageRating ~ genres, data = aov_df) %>% summary()
+```
+From the results of our ANOVA test above, we can see that our p-value is very small, much smaller than 0.05, meaning we can reject $H_0: \mu_{war} = \mu_{romance} = \mu_{western} = \mu_{sci-fi}$, indicating there is a significant difference in the mean ratings for at least one of the tested genres (Romance, War, Western, Sci-Fi).
+
+
+## Fantasy vs Comedy vs Horror
+
+In this section we test for differences in mean ratings across groups larger than 2 genres, meaning we need to perform an Analysis of Variance test.
+
+### Check Assumptions
+
+1) **Normality**
+```{r, echo=F}
+fantasy_ratings <- movies %>% filter(`genres` == "Fantasy") %>% pull(`averageRating`)
+comedy_ratings <- movies %>% filter(`genres` == "Comedy") %>% pull(`averageRating`)
+horror_ratings <- movies %>% filter(`genres` == "Horror") %>% pull(`averageRating`)
+
+qqnorm(fantasy_ratings, main = "Fantasy Normal Q-Q Plot")
+qqnorm(comedy_ratings, main = "Comedy Normal Q-Q Plot")
+qqnorm(horror_ratings, main = "Horror Normal Q-Q Plot")
+```
+From the above Q-Q Plots, we can see that our normality assumption holds for all three genres.
+
+2) Homoscedasticity (Constant Variance)
+
+```{r, echo  = F}
+movies %>% filter(genres %in% c("Fantasy", "Comedy", "Horror")) %>% select(genres, averageRating) %>% na.omit() %>%
+  ggplot(aes(x = genres, y = averageRating)) +
+  geom_boxplot(staplewidth = 0.25)
+```
+From the above boxplots, we can see that the assumption of Homoscedasticity holds for this dataset as all three genres seem to have approximately the same variance.
+
+3) Independence
+
+Although we cannot test for independence, it is unlikely that the ratings for one movie or series strongly effects the rating for a different movie or series, meaning our assumption of Independence is most likely not violated.
+
+## Conduct ANOVA Test
+
+$$
+\begin{cases}
+H_0: \mu_{fantasy} = \mu_{comedy} = \mu_{horror}\\
+H_a: \text{At least one mean differs from the others}
+\end{cases}
+$$
+```{r, echo = F}
+aov_df <- movies %>% filter(genres %in% c("Fantasy", "Comedy", "Horror")) %>% select(genres, averageRating) %>% na.omit()
+aov(averageRating ~ genres, data = aov_df) %>% summary()
+```
+From the results of our ANOVA test above, we can see that our p-value is very small, much smaller than 0.05, meaning we can reject $H_0: \mu_{fantasy} = \mu_{comedy} = \mu_{horror}$, indicating there is a significant difference in the mean ratings for at least one of the tested genres (Fantasy, Comedy, Horror).
+
+
+# Testing for Differences in Mean Ratings Within Genres Across Years
+
+In this section we investigate if there are significant changes to the mean ratings of several genres across different years. We focus on the genres of History, Short Films, and Animation.
+
+```{r, echo=F, fig.width=8, message = F}
+within_generes_df <- movies %>% filter(genres %in% c("Short", "History", "Animation")) %>% select(genres, startYear, averageRating) %>% na.omit()
+
+within_generes_df %>%
+  group_by(genres, startYear) %>%
+  summarise(meanRating = mean(averageRating)) %>%
+  ggplot(aes(x = startYear, y = meanRating, group = 1)) +
+  geom_line()+
+  facet_wrap("genres") +
+  scale_x_discrete(breaks = seq(0, max(within_generes_df$startYear), by = 25)) +
+  labs(x = "Year", y = "Mean Rating", title = "Mean Rating over Time by Genre") +
+  theme_bw()
+```
+
+From the above graph displaying mean ratings in each year by genre, we can already see that the mean rating within each genre seems to vary greatly each year and tends to oscillate especially before 1950. In order to statistically test for difference in mean rating across years, we conducted an ANOVA test for each genre.
+
+## Conduct ANOVA Test for Shorts, History, and Animation Mean Ratings Across Years
+
+### Check Assumptions
+
+Since we have tested the assumption of Normality, Homoscedasticity, and Independence for other genres and found that they hold, it is reasonable to assume that they hold for these genres as well since all the data is coming from the same source.
+
+## Conduct ANOVA Test
+
+$$
+\begin{cases}
+H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j \\
+H_a: \text{At least one mean differs from the others}
+\end{cases}
+$$
+```{r, echo = F}
+aov_df <- movies %>% 
+  filter(genres == "Short") %>% 
+  select(startYear, averageRating) %>% 
+  na.omit() %>%
+  group_by(startYear) %>% 
+  summarise(mean_rating = mean(averageRating))
+
+within_generes_df <- movies %>% filter(genres %in% c("Short", "History", "Animation")) %>% select(genres, startYear, averageRating) %>% na.omit()
+
+aov(averageRating ~ startYear, data = within_generes_df) %>% summary()
+```
+From the results of our ANOVA test above, we can see that our p-value is very small, much smaller than 0.05, meaning we can reject $H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j $, indicating there is a significant difference in the mean ratings withing genres across years for the tested genres (Shorts, Animation, and History).
+
+
+
+
+
+
+
+
+
+
+
 ```{r, echo= F}
 #make line graph
 timed_genre_ratings <- movies %>%
@@ -61,6 +307,7 @@ timed_genre_ratings <- movies %>%
 timed_genre_ratings %>% 
   group_by(genres)
 ```
+
 ```{r, echo = F}
 ggplot(timed_genre_ratings, aes(x = startYear, y = avg_rating)) + 
   geom_point() +
@@ -68,6 +315,7 @@ ggplot(timed_genre_ratings, aes(x = startYear, y = avg_rating)) +
   labs(x = "Year", y = "Average Rating", title = "Average Rating of Genres Through the Years") +
   scale_x_discrete(breaks = seq(0, max(timed_genre_ratings$startYear), by = 50))
 ```
+
 ```{r, echo = F}
 # news, reality-tv, horror, documentary
 limited_timed_genre_ratings <- timed_genre_ratings %>%
