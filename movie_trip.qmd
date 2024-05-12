@@ -289,12 +289,20 @@ aov(averageRating ~ startYear, data = within_generes_df) %>% summary()
 ```
 From the results of our ANOVA test above, we can see that our p-value is very small, much smaller than 0.05, meaning we can reject $H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j $, indicating there is a significant difference in the mean ratings withing genres across years for the tested genres (Shorts, Animation, and History).
 
-
-
 ```{r, echo = F}
-runtime_df <- movies %>% select()
+runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "movie") %>% select(startYear, runtimeMinutes) 
+
+#aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
 
 ```
+
+```{r, echo = F}
+runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "tvSeries") %>% select(startYear, runtimeMinutes) 
+
+#aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
+
+```
+
 
 
 
