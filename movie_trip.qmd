@@ -289,25 +289,7 @@ aov(averageRating ~ startYear, data = within_generes_df) %>% summary()
 ```
 From the results of our ANOVA test above, we can see that our p-value is very small, much smaller than 0.05, meaning we can reject $H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j $, indicating there is a significant difference in the mean ratings withing genres across years for the tested genres (Shorts, Animation, and History).
 
-```{r, echo = F}
-runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "movie") %>% select(startYear, runtimeMinutes) 
-
-#aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
-
-```
-
-```{r, echo = F}
-runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "tvSeries") %>% select(startYear, runtimeMinutes) 
-
-#aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
-
-```
-
-
-
-
-
-
+# Testing for differences between Runtime and Time for Movies and TV series
 ```{r, echo = F}
 movies$runtimeMinutes <- as.numeric(movies$runtimeMinutes)
 timed_runlength <- movies %>%
@@ -323,6 +305,8 @@ ggplot(timed_runlength)+
   scale_x_discrete(breaks = seq(0, max(timed_runlength$startYear), by = 25)) +
   ylim(0, 120)
 ```
+Visually, it seems that movies lengths have not increased or decreased over time. 
+
 ```{r, echo = F}
 series_timed_runlength <- movies %>%
   group_by(startYear) %>%
@@ -337,6 +321,51 @@ ggplot(series_timed_runlength)+
   scale_x_discrete(breaks = seq(0, max(series_timed_runlength$startYear), by = 25)) +
   ylim(0, 60)
 ```
+Visually, it seems that has not chnaged over time. 
+
+## Conduct ANOVA Test for average runtime of Movies Over Time
+
+## Check Assumptions
+
+
+## Conduct ANOVA Test
+
+$$
+\begin{cases}
+H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j \\
+H_a: \text{At least one mean differs from the others}
+\end{cases}
+$$
+
+
+```{r, echo = F}
+runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "movie") %>% select(startYear, runtimeMinutes) 
+
+# aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
+
+```
+## Conduct ANOVA Test for average runtime of TV Series Over Time
+
+## Check Assumptions
+
+
+## Conduct ANOVA Test
+
+$$
+\begin{cases}
+H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j \\
+H_a: \text{At least one mean differs from the others}
+\end{cases}
+$$
+```{r, echo = F}
+runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "tvSeries") %>% select(startYear, runtimeMinutes) 
+
+aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
+
+```
+```
+
+# Testing for differences in Adult Movies vs Rating
 ```{r, echo = F}
 # Does more votes influence rating?
 adult_movies <- movies %>%
