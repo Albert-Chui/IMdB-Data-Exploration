@@ -2,6 +2,7 @@
 title: "Mini Project 2"
 author: 
   - Albert Chui (albertchui)
+  - Joseph Zaki (josephzaki)
 date: "May 8, 2024"
 format: pdf
 fontsize: 12pt
@@ -16,6 +17,7 @@ toc: TRUE
 \begin{abstract}
 In this paper we explore data from the official IMdB Documentation detailing 942007 movies. We find that the average rating between genres varies between 5 and 7 points. For the ratings of selected genres of news, reality-tv, horror, documentary we see that documentaries are relativly stable, horror has been decreasing, reality-tv has been increasing, and news has been extremly variable throughout the years. In addition, runtime of movies has been increasing over the years, to a current 2024 average of 120 minutes. The runtime of episodes in tv series had been increasing until 24 years ago, when it has suddenly started decreasing until it hit 40 minutes, then bounced back to 50 minutes. 
 \end{abstract}
+
 
 ```{r, echo = F, message = F}
 library("tidyverse")
@@ -279,18 +281,47 @@ $$
 aov_df <- movies %>% 
   filter(genres == "Short") %>% 
   select(startYear, averageRating) %>% 
-  na.omit() %>%
-  group_by(startYear) %>% 
-  summarise(mean_rating = mean(averageRating))
+  na.omit() #%>%
+  #group_by(startYear) %>% 
+  #summarise(mean_rating = mean(averageRating))
 
 within_generes_df <- movies %>% filter(genres %in% c("Short", "History", "Animation")) %>% select(genres, startYear, averageRating) %>% na.omit()
 
 aov(averageRating ~ startYear, data = within_generes_df) %>% summary()
 ```
-From the results of our ANOVA test above, we can see that our p-value is very small, much smaller than 0.05, meaning we can reject $H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j $, indicating there is a significant difference in the mean ratings withing genres across years for the tested genres (Shorts, Animation, and History).
+From the results of our ANOVA test above, we can see that our p-value is very small, much smaller than 0.05, meaning we can reject $H_0: \mu_{i} = \mu_{j} ; \text{for } i,j \in \text{Years and } i\ne j $, indicating there is a significant difference in the mean ratings within genres across years for the tested genres (Shorts, Animation, and History).
 
-# Testing for differences between Runtime and Time for Movies and TV series
 ```{r, echo = F}
+aov_df <- movies %>% 
+  filter(genres == "Short") %>% 
+  select(startYear, averageRating) %>% 
+  na.omit() 
+
+aov(averageRating ~ startYear, data = aov_df) %>% summary()
+
+```
+
+
+```{r, echo = F}
+aov_df <- movies %>% 
+  filter(genres == "History") %>% 
+  select(startYear, averageRating) %>% 
+  na.omit() 
+
+aov(averageRating ~ startYear, data = aov_df) %>% summary()
+
+```
+```{r, echo = F}
+aov_df <- movies %>% 
+  filter(genres == "Animation") %>% 
+  select(startYear, averageRating) %>% 
+  na.omit() 
+
+aov(averageRating ~ startYear, data = aov_df) %>% summary()
+
+```
+# Testing for differences between Runtime and Time for Movies and TV series
+```{r, echo = F, warning = F}
 movies$runtimeMinutes <- as.numeric(movies$runtimeMinutes)
 timed_runlength <- movies %>%
   group_by(startYear) %>%
@@ -300,7 +331,7 @@ timed_runlength <- movies %>%
 
 ```{r, echo = F}
 ggplot(timed_runlength)+
-  geom_point(aes(x=`startYear`, y = `avg_runtime`)) + 
+  geom_line(aes(x=`startYear`, y = `avg_runtime`), group = 1) + 
   labs(x = "Year", y = "Average Runtime", title = "Average Runtime of Movies Through the Years") +
   scale_x_discrete(breaks = seq(0, max(timed_runlength$startYear), by = 25)) +
   ylim(0, 120)
@@ -308,6 +339,8 @@ ggplot(timed_runlength)+
 Visually, it seems that movies lengths have not increased or decreased over time. 
 
 ```{r, echo = F}
+movies$runtimeMinutes <- as.numeric(movies$runtimeMinutes)
+
 series_timed_runlength <- movies %>%
   group_by(startYear) %>%
   filter(titleType == "tvSeries") %>%
@@ -316,17 +349,17 @@ series_timed_runlength <- movies %>%
 
 ```{r}
 ggplot(series_timed_runlength)+
-  geom_point(aes(x=`startYear`, y = `avg_runtime`)) + 
+  geom_line(aes(x=`startYear`, y = `avg_runtime`), group = 1) + 
   labs(x = "Year", y = "Average Runtime", title = "Average Runtime of TV Series Through the Years") +
   scale_x_discrete(breaks = seq(0, max(series_timed_runlength$startYear), by = 25)) +
   ylim(0, 60)
 ```
-Visually, it seems that has not chnaged over time. 
+Visually, it seems that has not chnaged over time on average. 
 
 ## Conduct ANOVA Test for average runtime of Movies Over Time
 
 ## Check Assumptions
-
+boxplot for 131 years. 
 
 ## Conduct ANOVA Test
 
@@ -339,9 +372,14 @@ $$
 
 
 ```{r, echo = F}
-runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "movie") %>% select(startYear, runtimeMinutes) 
+movies$runtimeMinutes <- as.numeric(movies$runtimeMinutes)
 
-# aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
+runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "movie") %>% 
+  select(startYear, runtimeMinutes) %>% na.omit() 
+#%>% group_by(startYear) %>% summarise(runtimeMinutes = mean(runtimeMinutes))
+
+
+aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
 
 ```
 ## Conduct ANOVA Test for average runtime of TV Series Over Time
@@ -358,16 +396,25 @@ H_a: \text{At least one mean differs from the others}
 \end{cases}
 $$
 ```{r, echo = F}
-runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "tvSeries") %>% select(startYear, runtimeMinutes) 
+movies$runtimeMinutes <- as.numeric(movies$runtimeMinutes)
 
-aov(runtimeMinutes ~ startYear, data = runtime_df) %>% summary()
+runtime_df <- movies %>% filter(runtimeMinutes > 0 & titleType == "tvSeries") %>% select(startYear, runtimeMinutes) %>% na.omit()
+
+aov(runtimeMinutes ~ startYear, data = runtime_df) %>% anova()
 
 ```
-```
+
+
+
+
+
+
+
 
 # Testing for differences in Adult Movies vs Rating
+
 ```{r, echo = F}
-# Does more votes influence rating?
+
 adult_movies <- movies %>%
   group_by(startYear) %>%
   filter(`isAdult` == 1 & startYear > "1962" & titleType == "movie") %>%
@@ -379,6 +426,8 @@ not_adult_movies <- movies %>%
   summarise(avg_rating1 = mean(averageRating, na.rm = T))
 ```
 
+
+##
 ```{r, echo = F}
 a_movie <- full_join(
   adult_movies, 
